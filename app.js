@@ -20,7 +20,7 @@ var compression = require('compression');
 
 // require the routes
 var index = require('./routes/index');
-var api = require('./routes/api');
+var api = require('./routes/apiv2');
 
 var app = express();
 
