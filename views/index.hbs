@@ -19,6 +19,33 @@
 		</div>
 	</form>
 </div>
+<div class = "row">
+    
+    {{#if config.settings.show_pinned_categories}}
+        <div class="col-md-12 col-lg-12 ">
+            <div style="margin-top: 30px;">
+                {{#each config.settings.pinned_categories}}
+                    <a href="/search/{{this.name}}">
+                        <div class="col-lg-3">
+                            <div class="panel">
+                                <div class="panel-heading">
+                                    <div class="row">
+                                        <div class="col-xs-12 text-center">
+                                        <i class="{{this.iconClass}}"></i>
+                                        </div>
+                                        <div class="col-xs-12 text-center">
+                                            <div style = "font-size: large;">{{this.name}}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                {{/each}}
+            </div>
+        </div>
+    {{/if}}
+</div>
 <div class="row">
     {{#if config.settings.show_featured_articles}}
         <div class="col-md-2 col-md-offset-1 col-lg-2 col-lg-offset-1">

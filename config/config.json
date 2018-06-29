@@ -18,6 +18,7 @@
         "show_kb_meta": true,
         "suggest_allowed": true,
         "show_author_email": true,
+        "show_pinned_categories": true,
         "mermaid": false,
         "mathjax": false,
         "mathjax_input_mode": "TeX-MML-AM_CHTML",
@@ -51,6 +52,24 @@
             "cssLinkColor": "",
             "cssTextColor": "",
             "cssFontFamily": ""
-        }
+        },
+        "pinned_categories": [
+            {
+                "name": "HyperEngine",
+                "iconClass": "fa fa-credit-card fa-5x"
+            },
+            {
+                "name": "Intellastore",
+                "iconClass": "fa fa-eercast fa-5x"
+            },
+            {
+                "name": "Titan",
+                "iconClass": "fa fa-download fa-5x"
+            },
+            {
+                "name": "Filters",
+                "iconClass": "fa fa-filter fa-5x"
+            }
+        ]
     }
 }
