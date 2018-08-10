@@ -92,6 +92,93 @@ router.get('/api/article/:id', function (req, res){
     });
 });
 
+router.get('/external_api/article/:id', function (req, res){
+    var db = req.app.db;
+    common.config_expose(req.app);
+    var classy = require('../public/javascripts/markdown-it-classy');
+    var markdownit = req.markdownit;
+    markdownit.use(classy);
+
+    var featuredCount = config.settings.featured_articles_count ? config.settings.featured_articles_count : 4;
+
+    // set the template dir
+    common.setTemplateDir('user', req);
+
+
+    // get sortBy from config, set to 'kb_viewcount' if nothing found
+    var sortByField = typeof config.settings.sort_by.field !== 'undefined' ? config.settings.sort_by.field : 'kb_viewcount';
+    var sortByOrder = typeof config.settings.sort_by.order !== 'undefined' ? config.settings.sort_by.order : -1;
+    var sortBy = {};
+    sortBy[sortByField] = sortByOrder;
+
+    db.kb.findOne({$or: [{_id: common.getId(req.params.id)}, {kb_permalink: req.params.id}], kb_versioned_doc: {$ne: true}}, function (err, result){
+        // render 404 if page is not published
+        console.log(result.kb_published)
+        if(result == null || result.kb_published === 'false' || result.kb_published_external === 'false'){
+            res.status(404).json({error: "error"});
+        }else{
+            // check if has a password
+            if(result.kb_password){
+                if(result.kb_password !== ''){
+                    if(req.session.pw_validated === 'false' || req.session.pw_validated === undefined || req.session.pw_validated == null){
+                        res.render('protected_kb', {
+                            title: 'Protected Article',
+                            result: result,
+                            config: config,
+                            session: req.session,
+                            helpers: req.handlebars
+                        });
+                        return;
+                    }
+                }
+            }
+
+            // if article is set to private, redirect to login
+            if(typeof result.kb_visible_state !== 'undefined' && result.kb_visible_state === 'private'){
+                if(!req.session.user){
+                    req.session.refer_url = req.originalUrl;
+                    res.redirect('/login');
+                    return;
+                }
+            }
+
+            // add to old view count
+            var old_viewcount = result.kb_viewcount;
+            if(old_viewcount == null){
+                old_viewcount = 0;
+            }
+
+            var new_viewcount = old_viewcount;
+            // increment if the user is logged in and if settings say so
+            if(req.session.user && config.settings.update_view_count_logged_in){
+                new_viewcount = old_viewcount + 1;
+            }
+
+            // increment if the user is a guest and not logged in
+            if(!req.session.user){
+                new_viewcount = old_viewcount + 1;
+            }
+
+            // update kb_viewcount
+            db.kb.update({$or: [{_id: common.getId(req.params.id)}, {kb_permalink: req.params.id}]},
+                {
+                    $set: {kb_viewcount: new_viewcount}
+                }, {multi: false}, function (err, numReplaced){
+                // clear session auth and render page
+                req.session.pw_validated = null;
+
+                // show the view
+                common.dbQuery(db.kb, {kb_published: 'true'}, sortBy, featuredCount, function (err, featured_results){
+                    res.status(200).json({
+                        title: result.kb_title,
+                        //result: result,
+                        kb_body: common.sanitizeHTML(markdownit.render(result.kb_body))
+                    });
+                });
+            });
+        }
+    });
+});
 
 
 
@@ -117,6 +204,28 @@ router.get('/api/index', function(req, res){
         });
     });
 });
+
+router.get('/external_api/index', function(req, res){
+    var db = req.app.db;
+    common.config_expose(req.app);
+    var featuredCount = config.settings.featured_articles_count ? config.settings.featured_articles_count : 4;
+
+    var sortByField = typeof config.settings.sort_by.field !== 'undefined' ? config.settings.sort_by.field : 'kb_viewcount';
+    var sortByOrder = typeof config.settings.sort_by.order !== 'undefined' ? config.settings.sort_by.order : -1;
+    var sortBy = {};
+    sortBy[sortByField] = sortByOrder;
+
+    common.dbQuery(db.kb, {kb_published: 'true', kb_published_external: 'true' }, sortBy, config.settings.num_top_results, function (err, top_results){
+        common.dbQuery(db.kb, {kb_published: 'true', kb_published_external: 'true', kb_featured: 'true'}, sortBy, featuredCount, function (err, featured_results){
+            res.status(200).json({
+                top_results: top_results,
+                featured_results: featured_results
+            })
+        });
+    });
+});
+
+
 
 // validate the permalink
 router.post('/api/getArticleJson', function(req, res){

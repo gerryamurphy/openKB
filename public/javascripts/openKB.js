@@ -243,6 +243,19 @@ $(document).ready(function(){
         });
     });
 
+    $("input[class='external_published_state']").change(function(){
+        $.ajax({
+            method: 'POST',
+            url: $('#app_context').val() + '/external_published_state',
+            data: {id: this.id, state: this.checked}
+        })
+        .done(function(msg){
+            show_notification(msg, 'success');
+        })
+        .fail(function(msg){
+            show_notification(msg.responseText, 'danger');
+        });
+    });
     // convert editor markdown to HTML and display in #preview div
     function convertTextAreaToMarkdown(){
         var classy = window.markdownItClassy;

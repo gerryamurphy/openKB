@@ -90,6 +90,18 @@
                             <input type="checkbox" name="frm_kb_featured" {{checked_state result.kb_featured}}> {{__ "Featured article"}}
                         </label>
                     </div>
+                    <div>
+                        <label for="frm_kb_published_external">{{__ "Published Externally (apcon.com)"}}</label><br/>
+                        <select class="form-control" id="frm_kb_published_external" name="frm_kb_published_external">
+                            {{#ifCond result.kb_published_external "==" "true"}}
+                                <option value="true" selected>{{__ "Yes"}}</option>
+                                <option value="false">{{__ "No"}}</option>
+                            {{else}}
+                                <option value="true">{{__ "Yes"}}</option>
+                                <option value="false" selected>{{__ "No"}}</option>
+                            {{/ifCond}}
+                        </select>
+                    </div>
                 </li>
                 <li class="list-group-item">
                     <label>{{__ "Visible state"}}</label>

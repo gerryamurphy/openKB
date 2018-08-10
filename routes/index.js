@@ -88,6 +88,31 @@ router.post('/search_api', function (req, res){
     });
 });
 
+router.post('/external_api/search_api', function (req, res){
+    var db = req.app.db;
+    var index = req.app.index;
+
+    // we strip the ID's from the lunr index search
+    var index_id_array = [];
+    index.search(req.body.searchTerm).forEach(function (id){
+        // if mongoDB we use ObjectID's, else normal string ID's
+        if(config.settings.database.type !== 'embedded'){
+            index_id_array.push(common.getId(id.ref));
+        }else{
+            index_id_array.push(id.ref);
+        }
+    });
+
+    common.dbQuery(db.kb, {_id: {$in: index_id_array}, kb_published: 'true', kb_published_external: 'true', kb_versioned_doc: {$ne: true}}, null, null, function (err, results){
+        if(err){
+            return res.status(400).json({});
+        }
+        return res.status(200).json(results);
+    });
+});
+
+
+
 // vote on articles
 router.post('/vote', function (req, res){
     var db = req.app.db;
@@ -605,13 +630,13 @@ router.post('/save_kb', common.restrict, function (req, res){
                 }else{
                     published_date = article.kb_published_date;
                 }
-
                 // update our old doc
                 db.kb.update({_id: common.getId(req.body.frm_kb_id)}, {
                     $set: {
                         kb_title: req.body.frm_kb_title,
                         kb_body: req.body.frm_kb_body,
                         kb_published: req.body.frm_kb_published,
+                        kb_published_external: req.body.frm_kb_published_external,
                         kb_keywords: keywords,
                         kb_last_updated: new Date(),
                         kb_last_update_user: req.session.users_name + ' - ' + req.session.user,
@@ -841,6 +866,21 @@ router.post('/published_state', common.restrict, function (req, res){
         }else{
             res.writeHead(200, {'Content-Type': 'application/text'});
             res.end('Published state updated');
+        }
+    });
+});
+
+// update the external published state based on an ajax call from the frontend
+router.post('/external_published_state', common.restrict, function (req, res){
+    var db = req.app.db;
+    db.kb.update({_id: common.getId(req.body.id)}, {$set: {kb_published_external: req.body.state}}, {multi: false}, function (err, numReplaced){
+        if(err){
+            console.error('Failed to update the external published state: ' + err);
+            res.writeHead(400, {'Content-Type': 'application/text'});
+            res.end('External published state not updated');
+        }else{
+            res.writeHead(200, {'Content-Type': 'application/text'});
+            res.end('External published state updated');
         }
     });
 });
